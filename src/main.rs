@@ -16,23 +16,33 @@ fn main() -> eframe::Result {
 
 #[derive(Default)]
 struct MyApp {
-    picked_path: Option<String>,
+    video_path: String,
+    subtitle_path: String,
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            if ui.button("Select video...").clicked()
-                && let Some(path) = rfd::FileDialog::new().pick_file()
-            {
-                self.picked_path = Some(path.display().to_string());
-            }
-            if let Some(picked_path) = &self.picked_path {
-                ui.horizontal(|ui| {
-                    ui.label("Picked file:");
-                    ui.monospace(picked_path);
-                });
-            }
+            ui.label(egui::RichText::new("Files").heading());
+            ui.horizontal(|ui| {
+                if ui.button("Video").clicked() {
+                    self.video_path = select_file();
+                }
+                ui.text_edit_singleline(&mut self.video_path);
+            });
+            ui.horizontal(|ui| {
+                if ui.button("Subtitle").clicked() {
+                    self.subtitle_path = select_file();
+                }
+                ui.text_edit_singleline(&mut self.subtitle_path);
+            });
         });
+    }
+}
+
+fn select_file() -> String {
+    match rfd::FileDialog::new().pick_file() {
+        Some(file) => file.display().to_string(),
+        None => "".into(),
     }
 }
