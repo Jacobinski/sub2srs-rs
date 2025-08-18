@@ -36,6 +36,35 @@ impl eframe::App for MyApp {
                 }
                 ui.text_edit_singleline(&mut self.subtitle_path);
             });
+
+            ui.label(egui::RichText::new("Subtitles").heading());
+            if !self.subtitle_path.is_empty() {
+                // XXX: There are multiple file formats for subtitles including SRT and VTT.
+                //      We should ensure nice handling of all formats here.
+                //      If the user provides a bad file path, lets give them a red warning box
+                //      telling them to double check the extension of their file.
+                let items = match srtparse::from_file(&self.subtitle_path) {
+                    Ok(subtitles) => subtitles,
+                    Err(error) => {
+                        let frame = egui::Frame::window(&ui.style())
+                            .stroke(egui::Stroke::new(2.0, egui::Color32::RED));
+                        frame.show(ui, |ui| {
+                            ui.label(format!(
+                                "Unable to parse {} due to error: {}",
+                                &self.subtitle_path, error
+                            ));
+                        });
+                        Vec::new()
+                    }
+                };
+                let subtitles = items
+                    .iter()
+                    .map(|sub| sub.to_string())
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                ui.label(subtitles);
+                // println!("{:?}", items);
+            }
         });
     }
 }
