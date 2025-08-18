@@ -47,6 +47,8 @@ impl eframe::App for MyApp {
                     Ok(subtitles) => subtitles,
                     Err(error) => {
                         let frame = egui::Frame::window(&ui.style())
+                            .shadow(egui::Shadow::NONE)
+                            .fill(egui::Color32::LIGHT_RED)
                             .stroke(egui::Stroke::new(2.0, egui::Color32::RED));
                         frame.show(ui, |ui| {
                             ui.label(format!(
