@@ -28,13 +28,13 @@ impl eframe::App for MyApp {
                 if ui.button("Video").clicked() {
                     self.video_path = select_file();
                 }
-                ui.text_edit_singleline(&mut self.video_path);
+                ui.add(egui::TextEdit::singleline(&mut self.video_path).desired_width(f32::INFINITY));
             });
             ui.horizontal(|ui| {
                 if ui.button("Subtitle").clicked() {
                     self.subtitle_path = select_file();
                 }
-                ui.text_edit_singleline(&mut self.subtitle_path);
+                ui.add(egui::TextEdit::singleline(&mut self.subtitle_path).desired_width(f32::INFINITY));
             });
 
             ui.label(egui::RichText::new("Subtitles").heading());
