@@ -14,9 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Install FFmpeg
+      run: sudo apt-get update && sudo apt-get install -y ffmpeg
+    - name: Install Git LFS
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git-lfs
+        git lfs install
+    - name: Checkout LFS files
+      run: git lfs pull
     - name: Build
       run: cargo build --verbose
-    - name: Install ffmpeg
-      run: sudo apt-get update && sudo apt-get install -y ffmpeg
     - name: Run tests
       run: cargo test --verbose
