@@ -297,7 +297,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // This test runs a real FFmpeg process and depends on external files. Run with `cargo test -- --ignored`.
     fn test_ffmpeg_execution() {
         let output_dir = setup_test_dir();
         let output_dir_str = output_dir.to_str().unwrap();
