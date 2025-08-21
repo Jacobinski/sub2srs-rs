@@ -353,15 +353,15 @@ mod tests {
         let ctx = egui::Context::default();
 
         let _ = ctx.run(Default::default(), |ctx| {
-            ctx.input_mut(|c| c.events.push(
-                egui::Event::Key {
+            ctx.input_mut(|c| {
+                c.events.push(egui::Event::Key {
                     key: egui::Key::Escape,
                     physical_key: Some(egui::Key::Escape),
                     pressed: true,
                     repeat: false,
                     modifiers: egui::Modifiers::NONE,
                 })
-            );
+            });
 
             let mut app = MyApp::default();
             app.render_app(ctx);
