@@ -18,20 +18,20 @@ pub fn run() -> eframe::Result {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct SubtitleClip {
-    pub index: usize,
-    pub start_time: std::time::Duration,
-    pub end_time: std::time::Duration,
+struct SubtitleClip {
+    index: usize,
+    start_time: std::time::Duration,
+    end_time: std::time::Duration,
 }
 
 #[derive(Default)]
-pub struct MyApp {
-    pub video_path: String,
-    pub subtitle_path: String,
-    pub clips: Vec<SubtitleClip>,
+struct MyApp {
+    video_path: String,
+    subtitle_path: String,
+    clips: Vec<SubtitleClip>,
 }
 
-pub fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
+fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
     subs.iter()
         .map(|sub| SubtitleClip {
             index: sub.pos,
@@ -41,7 +41,7 @@ pub fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
         .collect()
 }
 
-pub mod ffmpeg_command {
+mod ffmpeg_command {
     // Constants for FFmpeg flags
     pub const INPUT: &str = "-i";
     pub const SEEK: &str = "-ss";
