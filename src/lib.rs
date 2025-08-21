@@ -1,3 +1,5 @@
+pub mod ffmpeg;
+
 use eframe::egui;
 use std::fs;
 use std::path::Path;
@@ -41,58 +43,6 @@ fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
         .collect()
 }
 
-mod ffmpeg_command {
-    // Constants for FFmpeg flags
-    pub const INPUT: &str = "-i";
-    pub const SEEK: &str = "-ss";
-    pub const VFRAMES: &str = "-vframes";
-    pub const VF: &str = "-vf";
-    pub const SCALE: &str = "scale=-1:320";
-    pub const AN: &str = "-an";
-    pub const TO: &str = "-to";
-    pub const VN: &str = "-vn";
-    pub const CODEC_AUDIO: &str = "-c:a";
-    pub const LIBMP3LAME: &str = "libmp3lame";
-    pub const BITRATE_AUDIO: &str = "-b:a";
-    pub const BITRATE_192K: &str = "192k";
-
-    pub fn build_ffmpeg_args_for_clip(
-        clip_index: usize,
-        clip_start_time: f64,
-        clip_end_time: f64,
-        video_path: &str,
-        output_dir: &str,
-    ) -> Vec<String> {
-        let start_time_str = clip_start_time.to_string();
-        let end_time_str = clip_end_time.to_string();
-
-        vec![
-            INPUT.to_string(),
-            video_path.to_string(),
-            // Screenshot
-            SEEK.to_string(),
-            start_time_str.clone(),
-            VFRAMES.to_string(),
-            "1".to_string(),
-            VF.to_string(),
-            SCALE.to_string(),
-            AN.to_string(),
-            format!("{}/screenshot_{}.png", output_dir, clip_index),
-            // Audio clip
-            SEEK.to_string(),
-            start_time_str,
-            TO.to_string(),
-            end_time_str,
-            VN.to_string(),
-            CODEC_AUDIO.to_string(),
-            LIBMP3LAME.to_string(),
-            BITRATE_AUDIO.to_string(),
-            BITRATE_192K.to_string(),
-            format!("{}/audio_clip_{}.mp3", output_dir, clip_index),
-        ]
-    }
-}
-
 impl MyApp {
     fn generate_clips(&self) {
         let output_dir = "/tmp/sub2srs_test"; // This should probably be a constant or configurable
@@ -101,7 +51,7 @@ impl MyApp {
         }
 
         for clip in &self.clips {
-            let args = ffmpeg_command::build_ffmpeg_args_for_clip(
+            let args = ffmpeg::build_ffmpeg_args_for_clip(
                 clip.index,
                 clip.start_time.as_secs_f64(),
                 clip.end_time.as_secs_f64(),
@@ -272,7 +222,7 @@ mod tests {
         let output_dir = "/tmp/sub2srs_test";
         let video_path = get_absolute_path(TEST_VIDEO);
 
-        let args = ffmpeg_command::build_ffmpeg_args_for_clip(
+        let args = ffmpeg::build_ffmpeg_args_for_clip(
             clip.index,
             clip.start_time.as_secs_f64(),
             clip.end_time.as_secs_f64(),
@@ -281,25 +231,25 @@ mod tests {
         );
 
         let expected_args: Vec<String> = [
-            ffmpeg_command::INPUT,
+            ffmpeg::INPUT,
             &video_path,
-            ffmpeg_command::SEEK,
+            ffmpeg::SEEK,
             "10",
-            ffmpeg_command::VFRAMES,
+            ffmpeg::VFRAMES,
             "1",
-            ffmpeg_command::VF,
-            ffmpeg_command::SCALE,
-            ffmpeg_command::AN,
+            ffmpeg::VF,
+            ffmpeg::SCALE,
+            ffmpeg::AN,
             "/tmp/sub2srs_test/screenshot_1.png",
-            ffmpeg_command::SEEK,
+            ffmpeg::SEEK,
             "10",
-            ffmpeg_command::TO,
+            ffmpeg::TO,
             "15",
-            ffmpeg_command::VN,
-            ffmpeg_command::CODEC_AUDIO,
-            ffmpeg_command::LIBMP3LAME,
-            ffmpeg_command::BITRATE_AUDIO,
-            ffmpeg_command::BITRATE_192K,
+            ffmpeg::VN,
+            ffmpeg::CODEC_AUDIO,
+            ffmpeg::LIBMP3LAME,
+            ffmpeg::BITRATE_AUDIO,
+            ffmpeg::BITRATE_192K,
             "/tmp/sub2srs_test/audio_clip_1.mp3",
         ]
         .iter()
@@ -322,7 +272,7 @@ mod tests {
 
         // Test only the first 3 clips to save time
         for clip in clips.iter().take(3) {
-            let args = ffmpeg_command::build_ffmpeg_args_for_clip(
+            let args = ffmpeg::build_ffmpeg_args_for_clip(
                 clip.index,
                 clip.start_time.as_secs_f64(),
                 clip.end_time.as_secs_f64(),
