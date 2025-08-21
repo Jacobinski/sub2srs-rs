@@ -69,7 +69,6 @@ pub mod ffmpeg_command {
         vec![
             INPUT.to_string(),
             video_path.to_string(),
-
             // Screenshot
             SEEK.to_string(),
             start_time_str.clone(),
@@ -79,7 +78,6 @@ pub mod ffmpeg_command {
             SCALE.to_string(),
             AN.to_string(),
             format!("{}/screenshot_{}.png", output_dir, clip_index),
-
             // Audio clip
             SEEK.to_string(),
             start_time_str,
@@ -128,64 +126,79 @@ impl MyApp {
         }
         println!("All clips processed.");
     }
+
+    fn render_app(&mut self, ctx: &egui::Context) {
+        // Add the ability to close on "esc" to improve the dev experience.
+        // TODO: Remove this after launch, as at least add a pop-up warning.
+        close_on_esc(ctx);
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            self.render_ui(ui);
+        });
+    }
+
+    fn render_ui(&mut self, ui: &mut egui::Ui) {
+        ui.label(egui::RichText::new("Files").heading());
+        ui.horizontal(|ui| {
+            if ui.button("Video").clicked() {
+                self.video_path = select_file();
+            }
+            ui.add(egui::TextEdit::singleline(&mut self.video_path).desired_width(f32::INFINITY));
+        });
+        ui.horizontal(|ui| {
+            if ui.button("Subtitle").clicked() {
+                self.subtitle_path = select_file();
+            }
+            ui.add(
+                egui::TextEdit::singleline(&mut self.subtitle_path).desired_width(f32::INFINITY),
+            );
+        });
+
+        ui.label(egui::RichText::new("Subtitles").heading());
+        if !self.subtitle_path.is_empty() {
+            let items = match srtparse::from_file(&self.subtitle_path) {
+                Ok(subtitles) => subtitles,
+                Err(error) => {
+                    let frame = egui::Frame::window(&ui.style())
+                        .shadow(egui::Shadow::NONE)
+                        .fill(egui::Color32::LIGHT_RED)
+                        .stroke(egui::Stroke::new(2.0, egui::Color32::RED));
+                    frame.show(ui, |ui| {
+                        ui.label(format!(
+                            "Unable to parse {} due to error: {}",
+                            &self.subtitle_path, error
+                        ));
+                    });
+                    Vec::new()
+                }
+            };
+            self.clips = convert_subs_to_clips(&items);
+        }
+
+        ui.separator();
+
+        let generate_button = egui::Button::new("Generate Clips");
+        if ui
+            .add_enabled(
+                !self.video_path.is_empty() && !self.clips.is_empty(),
+                generate_button,
+            )
+            .clicked()
+        {
+            self.generate_clips();
+        }
+    }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label(egui::RichText::new("Files").heading());
-            ui.horizontal(|ui| {
-                if ui.button("Video").clicked() {
-                    self.video_path = select_file();
-                }
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.video_path).desired_width(f32::INFINITY),
-                );
-            });
-            ui.horizontal(|ui| {
-                if ui.button("Subtitle").clicked() {
-                    self.subtitle_path = select_file();
-                }
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.subtitle_path)
-                        .desired_width(f32::INFINITY),
-                );
-            });
+        self.render_app(ctx);
+    }
+}
 
-            ui.label(egui::RichText::new("Subtitles").heading());
-            if !self.subtitle_path.is_empty() {
-                let items = match srtparse::from_file(&self.subtitle_path) {
-                    Ok(subtitles) => subtitles,
-                    Err(error) => {
-                        let frame = egui::Frame::window(&ui.style())
-                            .shadow(egui::Shadow::NONE)
-                            .fill(egui::Color32::LIGHT_RED)
-                            .stroke(egui::Stroke::new(2.0, egui::Color32::RED));
-                        frame.show(ui, |ui| {
-                            ui.label(format!(
-                                "Unable to parse {} due to error: {}",
-                                &self.subtitle_path, error
-                            ));
-                        });
-                        Vec::new()
-                    }
-                };
-                self.clips = convert_subs_to_clips(&items);
-            }
-
-            ui.separator();
-
-            let generate_button = egui::Button::new("Generate Clips");
-            if ui
-                .add_enabled(
-                    !self.video_path.is_empty() && !self.clips.is_empty(),
-                    generate_button,
-                )
-                .clicked()
-            {
-                self.generate_clips();
-            }
-        });
+fn close_on_esc(ctx: &egui::Context) {
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
 }
 
@@ -333,5 +346,28 @@ mod tests {
 
         let output_files = fs::read_dir(output_dir).unwrap().count();
         assert_eq!(output_files, 3 * 2, "Should be two files per clip tested");
+    }
+
+    #[test]
+    fn test_esc_closes_window() {
+        let ctx = egui::Context::default();
+
+        let _ = ctx.run(Default::default(), |ctx| {
+            ctx.input_mut(|c| c.events.push(
+                egui::Event::Key {
+                    key: egui::Key::Escape,
+                    physical_key: Some(egui::Key::Escape),
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                })
+            );
+
+            let mut app = MyApp::default();
+            app.render_app(ctx);
+
+            let viewport_events = ctx.viewport(|v| v.commands.clone());
+            assert!(viewport_events.contains(&egui::ViewportCommand::Close));
+        });
     }
 }
