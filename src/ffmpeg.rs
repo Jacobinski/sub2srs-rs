@@ -11,6 +11,24 @@ pub const LIBMP3LAME: &str = "libmp3lame";
 pub const BITRATE_AUDIO: &str = "-b:a";
 pub const BITRATE_192K: &str = "192k";
 
+/// FFmpeg runs an `ffmpeg` CLI command.
+pub struct FFmpeg {}
+
+/// FFmpegBuilder builds an FFmpeg struct.
+pub struct FFmpegBuilder {
+    input_path: String,
+    output_path: String,
+}
+
+impl FFmpegBuilder {
+    pub fn new(input_path: String, output_path: String) -> Self {
+        FFmpegBuilder {
+            input_path: input_path,
+            output_path: output_path,
+        }
+    }
+}
+
 pub fn build_ffmpeg_args_for_clip(
     clip_index: usize,
     clip_start_time: f64,
@@ -45,4 +63,18 @@ pub fn build_ffmpeg_args_for_clip(
         BITRATE_192K.to_string(),
         format!("{}/audio_clip_{}.mp3", output_dir, clip_index),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FFmpegBuilder;
+
+    #[test]
+    fn test_ffmpeg_builder_new() {
+        let input = "/directory/input.mp4";
+        let output = "/directory/output.png";
+        let builder = FFmpegBuilder::new(input.into(), output.into());
+        assert_eq!(builder.input_path, input);
+        assert_eq!(builder.output_path, output);
+    }
 }
