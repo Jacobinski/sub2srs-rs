@@ -16,8 +16,11 @@ pub struct FFmpeg {}
 
 /// FFmpegBuilder builds an FFmpeg struct.
 pub struct FFmpegBuilder {
+    // Required arguments
     input_path: String,
     output_path: String,
+    // Optional arguments
+    seek_time: Option<f64>,
 }
 
 impl FFmpegBuilder {
@@ -25,7 +28,14 @@ impl FFmpegBuilder {
         FFmpegBuilder {
             input_path: input_path,
             output_path: output_path,
+            seek_time: None,
         }
+    }
+
+    // Starts the input at `time`. Equivalent to the FFmpeg `-ss` flag.
+    pub fn seek_to(mut self, time: f64) -> Self {
+        self.seek_time = Some(time);
+        self
     }
 }
 
@@ -69,12 +79,25 @@ pub fn build_ffmpeg_args_for_clip(
 mod tests {
     use super::FFmpegBuilder;
 
+    const INPUT: &str = "/directory/input.mp4";
+    const OUTPUT: &str = "/directory/output.png";
+
     #[test]
     fn test_ffmpeg_builder_new() {
-        let input = "/directory/input.mp4";
-        let output = "/directory/output.png";
-        let builder = FFmpegBuilder::new(input.into(), output.into());
-        assert_eq!(builder.input_path, input);
-        assert_eq!(builder.output_path, output);
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into());
+
+        assert_eq!(builder.input_path, INPUT);
+        assert_eq!(builder.output_path, OUTPUT);
+        assert_eq!(builder.seek_time, None);
+    }
+
+    #[test]
+    fn test_ffmpeg_builder_seek() {
+        let seek_time: f64 = 1234.0;
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).seek_to(seek_time);
+
+        assert_eq!(builder.input_path, INPUT);
+        assert_eq!(builder.output_path, OUTPUT);
+        assert_eq!(builder.seek_time, Some(seek_time));
     }
 }
