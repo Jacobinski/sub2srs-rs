@@ -15,7 +15,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install FFmpeg
-      run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y libavcodec-dev
+          sudo apt-get install -y libavdevice-dev
+          sudo apt-get install -y libavfilter-dev
+          sudo apt-get install -y libavformat-dev
+          sudo apt-get install -y libavutil-dev
+          sudo apt-get install -y pkg-config
+    - name: Set PKG_CONFIG_PATH
+      run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
     - name: Install Git LFS
       run: |
         sudo apt-get update
