@@ -6,7 +6,6 @@ pub fn create_screenshot(
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time_us = (screenshot_time * 1_000_000.0) as i64;
-
     FfmpegContext::builder()
         .input(video_path)
         .output(
@@ -18,7 +17,6 @@ pub fn create_screenshot(
         .build()?
         .start()?
         .wait()?;
-
     Ok(())
 }
 
