@@ -22,6 +22,7 @@ pub struct FFmpegBuilder {
     // Optional arguments
     seek_time: Option<f64>,
     vframes: Option<i32>,
+    scale_height: Option<i32>,
 }
 
 impl FFmpegBuilder {
@@ -31,6 +32,7 @@ impl FFmpegBuilder {
             output_path: output_path,
             seek_time: None,
             vframes: None,
+            scale_height: None,
         }
     }
 
@@ -45,6 +47,13 @@ impl FFmpegBuilder {
     pub fn output_frames_count(mut self, count: i32) -> Self {
         assert!(self.vframes == None);
         self.vframes = Some(count);
+        self
+    }
+
+    // Sets the height of the output frames. Equivalent to the FFmpeg `-vf scale=-1:<height>` flag.
+    pub fn scale(mut self, height: i32) -> Self {
+        assert!(self.scale_height == None);
+        self.scale_height = Some(height);
         self
     }
 }
@@ -111,5 +120,12 @@ mod tests {
         let count = 2;
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).output_frames_count(count);
         assert_eq!(builder.vframes, Some(count));
+    }
+
+    #[test]
+    fn test_ffmpeg_builder_scale() {
+        let height = 320;
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).scale(height);
+        assert_eq!(builder.scale_height, Some(height));
     }
 }
