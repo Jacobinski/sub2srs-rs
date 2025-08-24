@@ -23,6 +23,7 @@ pub struct FFmpegBuilder {
     seek_time: Option<f64>,
     vframes: Option<i32>,
     scale_height: Option<i32>,
+    disable_audio: bool,
 }
 
 impl FFmpegBuilder {
@@ -33,6 +34,7 @@ impl FFmpegBuilder {
             seek_time: None,
             vframes: None,
             scale_height: None,
+            disable_audio: false,
         }
     }
 
@@ -54,6 +56,13 @@ impl FFmpegBuilder {
     pub fn scale(mut self, height: i32) -> Self {
         assert!(self.scale_height == None);
         self.scale_height = Some(height);
+        self
+    }
+
+    // Disables audio in the output stream. Equivalent to the FFmpeg `-an` flag.
+    pub fn disable_audio(mut self) -> Self {
+        assert!(self.disable_audio == false);
+        self.disable_audio = true;
         self
     }
 }
@@ -127,5 +136,11 @@ mod tests {
         let height = 320;
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).scale(height);
         assert_eq!(builder.scale_height, Some(height));
+    }
+
+    #[test]
+    fn test_ffmpeg_builder_disable_audio() {
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).disable_audio();
+        assert_eq!(builder.disable_audio, true);
     }
 }
