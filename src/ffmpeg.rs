@@ -21,6 +21,7 @@ pub struct FFmpegBuilder {
     output_path: String,
     // Optional arguments
     seek_time: Option<f64>,
+    vframes: Option<i32>,
 }
 
 impl FFmpegBuilder {
@@ -29,12 +30,21 @@ impl FFmpegBuilder {
             input_path: input_path,
             output_path: output_path,
             seek_time: None,
+            vframes: None,
         }
     }
 
     // Starts the input at `time`. Equivalent to the FFmpeg `-ss` flag.
     pub fn seek_to(mut self, time: f64) -> Self {
+        assert!(self.seek_time == None);
         self.seek_time = Some(time);
+        self
+    }
+
+    // Sets the number of frames to output. Equivalent to the FFmpeg `-vframes` flag.
+    pub fn output_frames_count(mut self, count: i32) -> Self {
+        assert!(self.vframes == None);
+        self.vframes = Some(count);
         self
     }
 }
@@ -85,19 +95,21 @@ mod tests {
     #[test]
     fn test_ffmpeg_builder_new() {
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into());
-
         assert_eq!(builder.input_path, INPUT);
         assert_eq!(builder.output_path, OUTPUT);
-        assert_eq!(builder.seek_time, None);
     }
 
     #[test]
-    fn test_ffmpeg_builder_seek() {
+    fn test_ffmpeg_builder_seek_to() {
         let seek_time: f64 = 1234.0;
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).seek_to(seek_time);
-
-        assert_eq!(builder.input_path, INPUT);
-        assert_eq!(builder.output_path, OUTPUT);
         assert_eq!(builder.seek_time, Some(seek_time));
+    }
+
+    #[test]
+    fn test_ffmpeg_builder_output_frames_count() {
+        let count = 2;
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).output_frames_count(count);
+        assert_eq!(builder.vframes, Some(count));
     }
 }
