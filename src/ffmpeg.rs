@@ -12,7 +12,11 @@ pub const BITRATE_AUDIO: &str = "-b:a";
 pub const BITRATE_192K: &str = "192k";
 
 /// FFmpeg runs an `ffmpeg` CLI command.
-pub struct FFmpeg {}
+pub struct FFmpeg {
+    input_path: String,
+    output_path: String,
+    flags: String,
+}
 
 /// FFmpegBuilder builds an FFmpeg struct.
 pub struct FFmpegBuilder {
@@ -64,6 +68,32 @@ impl FFmpegBuilder {
         assert!(self.disable_audio == false);
         self.disable_audio = true;
         self
+    }
+
+    pub fn build(self) -> FFmpeg {
+        assert!(!self.input_path.is_empty());
+        assert!(!self.output_path.is_empty());
+
+        let mut flags: Vec<String> = Vec::new();
+
+        if let Some(seek_time) = self.seek_time {
+            flags.extend(["-ss".to_string(), seek_time.to_string()]);
+        }
+        if let Some(vframes) = self.vframes {
+            flags.extend(["-vframes".to_string(), vframes.to_string()]);
+        }
+        if let Some(scale_height) = self.scale_height {
+            flags.extend(["-vf".to_string(), format!("scale:-1:{}", scale_height)]);
+        }
+        if self.disable_audio {
+            flags.push("-an".to_string());
+        }
+
+        FFmpeg {
+            input_path: self.input_path,
+            output_path: self.output_path,
+            flags: flags.join(" "),
+        }
     }
 }
 
@@ -119,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_ffmpeg_builder_seek_to() {
-        let seek_time: f64 = 1234.0;
+        let seek_time = 123.0;
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).seek_to(seek_time);
         assert_eq!(builder.seek_time, Some(seek_time));
     }
@@ -142,5 +172,21 @@ mod tests {
     fn test_ffmpeg_builder_disable_audio() {
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).disable_audio();
         assert_eq!(builder.disable_audio, true);
+    }
+
+    #[test]
+    fn test_ffmpeg_builder_build() {
+        let seek_time = 123.5;
+        let frame_count = 2;
+        let height = 320;
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into())
+            .seek_to(seek_time)
+            .output_frames_count(frame_count)
+            .scale(height)
+            .disable_audio();
+        let ffmpeg = builder.build();
+        assert_eq!(ffmpeg.input_path, INPUT.to_string());
+        assert_eq!(ffmpeg.output_path, OUTPUT.to_string());
+        assert_eq!(ffmpeg.flags, "-ss 123.5 -vframes 2 -vf scale:-1:320 -an");
     }
 }
