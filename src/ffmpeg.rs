@@ -29,6 +29,7 @@ pub struct FFmpegBuilder {
     scale_height: Option<i32>,
     disable_audio: bool,
     end_time: Option<f64>,
+    disable_video: bool,
 }
 
 impl FFmpegBuilder {
@@ -41,6 +42,7 @@ impl FFmpegBuilder {
             scale_height: None,
             disable_audio: false,
             end_time: None,
+            disable_video: false,
         }
     }
 
@@ -79,6 +81,13 @@ impl FFmpegBuilder {
         self
     }
 
+    // Disables video in the output stream. Equivalent to the FFmpeg `-vn` flag.
+    pub fn disable_video(mut self) -> Self {
+        assert!(self.disable_video == false);
+        self.disable_video = true;
+        self
+    }
+
     pub fn build(self) -> FFmpeg {
         assert!(!self.input_path.is_empty());
         assert!(!self.output_path.is_empty());
@@ -103,6 +112,9 @@ impl FFmpegBuilder {
         }
         if let Some(end_time) = self.end_time {
             flags.extend(["-to".to_string(), end_time.to_string()]);
+        }
+        if self.disable_video {
+            flags.push("-vn".to_string());
         }
 
         FFmpeg {
@@ -198,6 +210,12 @@ mod tests {
     }
 
     #[test]
+    fn test_ffmpeg_builder_disable_video() {
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).disable_video();
+        assert_eq!(builder.disable_video, true);
+    }
+
+    #[test]
     fn test_ffmpeg_builder_build() {
         let seek_time = 123.4;
         let end_time = 567.8;
@@ -209,14 +227,15 @@ mod tests {
             .end_at(end_time)
             .output_frames_count(frame_count)
             .scale(height)
-            .disable_audio();
+            .disable_audio()
+            .disable_video();
         let ffmpeg = builder.build();
 
         assert_eq!(ffmpeg.input_path, INPUT.to_string());
         assert_eq!(ffmpeg.output_path, OUTPUT.to_string());
         assert_eq!(
             ffmpeg.flags,
-            "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8"
+            "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8 -vn"
         );
     }
 }
