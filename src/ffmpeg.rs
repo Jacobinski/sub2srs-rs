@@ -28,6 +28,7 @@ pub struct FFmpegBuilder {
     vframes: Option<i32>,
     scale_height: Option<i32>,
     disable_audio: bool,
+    end_time: Option<f64>,
 }
 
 impl FFmpegBuilder {
@@ -39,6 +40,7 @@ impl FFmpegBuilder {
             vframes: None,
             scale_height: None,
             disable_audio: false,
+            end_time: None,
         }
     }
 
@@ -70,9 +72,20 @@ impl FFmpegBuilder {
         self
     }
 
+    // Ends the output at `time`. Equivalent to the FFmpeg `-to` flag.
+    pub fn end_at(mut self, time: f64) -> Self {
+        assert!(self.end_time == None);
+        self.end_time = Some(time);
+        self
+    }
+
     pub fn build(self) -> FFmpeg {
         assert!(!self.input_path.is_empty());
         assert!(!self.output_path.is_empty());
+        assert!(
+            !matches!((self.seek_time, self.end_time), (Some(start), Some(end)) if start > end),
+            "seek_time must be less than or equal to end_time if both are Some"
+        );
 
         let mut flags: Vec<String> = Vec::new();
 
@@ -87,6 +100,9 @@ impl FFmpegBuilder {
         }
         if self.disable_audio {
             flags.push("-an".to_string());
+        }
+        if let Some(end_time) = self.end_time {
+            flags.extend(["-to".to_string(), end_time.to_string()]);
         }
 
         FFmpeg {
@@ -175,18 +191,32 @@ mod tests {
     }
 
     #[test]
+    fn test_ffmpeg_builder_end_at() {
+        let end_time = 456.0;
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).end_at(end_time);
+        assert_eq!(builder.end_time, Some(end_time));
+    }
+
+    #[test]
     fn test_ffmpeg_builder_build() {
-        let seek_time = 123.5;
+        let seek_time = 123.4;
+        let end_time = 567.8;
         let frame_count = 2;
         let height = 320;
+
         let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into())
             .seek_to(seek_time)
+            .end_at(end_time)
             .output_frames_count(frame_count)
             .scale(height)
             .disable_audio();
         let ffmpeg = builder.build();
+
         assert_eq!(ffmpeg.input_path, INPUT.to_string());
         assert_eq!(ffmpeg.output_path, OUTPUT.to_string());
-        assert_eq!(ffmpeg.flags, "-ss 123.5 -vframes 2 -vf scale:-1:320 -an");
+        assert_eq!(
+            ffmpeg.flags,
+            "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8"
+        );
     }
 }
