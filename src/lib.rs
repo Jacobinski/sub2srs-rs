@@ -1,4 +1,5 @@
 pub mod ffmpeg;
+pub mod frame;
 
 use eframe::egui;
 use std::fs;
@@ -88,55 +89,55 @@ impl MyApp {
     }
 
     fn render_ui(&mut self, ui: &mut egui::Ui) {
-        ui.label(egui::RichText::new("Files").heading());
-        ui.horizontal(|ui| {
-            if ui.button("Video").clicked() {
-                self.video_path = select_file();
-            }
-            ui.add(egui::TextEdit::singleline(&mut self.video_path).desired_width(f32::INFINITY));
-        });
-        ui.horizontal(|ui| {
-            if ui.button("Subtitle").clicked() {
-                self.subtitle_path = select_file();
-            }
-            ui.add(
-                egui::TextEdit::singleline(&mut self.subtitle_path).desired_width(f32::INFINITY),
-            );
-        });
-
-        ui.label(egui::RichText::new("Subtitles").heading());
-        if !self.subtitle_path.is_empty() {
-            let items = match srtparse::from_file(&self.subtitle_path) {
-                Ok(subtitles) => subtitles,
-                Err(error) => {
-                    let frame = egui::Frame::window(&ui.style())
-                        .shadow(egui::Shadow::NONE)
-                        .fill(egui::Color32::LIGHT_RED)
-                        .stroke(egui::Stroke::new(2.0, egui::Color32::RED));
-                    frame.show(ui, |ui| {
-                        ui.label(format!(
-                            "Unable to parse {} due to error: {}",
-                            &self.subtitle_path, error
-                        ));
-                    });
-                    Vec::new()
+        frame::frame("Files", ui, |ui| {
+            ui.horizontal(|ui| {
+                if ui.button("Video").clicked() {
+                    self.video_path = select_file();
                 }
-            };
-            self.clips = convert_subs_to_clips(&items);
-        }
+                ui.add(egui::TextEdit::singleline(&mut self.video_path).desired_width(f32::INFINITY));
+            });
+            ui.horizontal(|ui| {
+                if ui.button("Subtitle").clicked() {
+                    self.subtitle_path = select_file();
+                }
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.subtitle_path).desired_width(f32::INFINITY),
+                );
+            });
+        });
 
-        ui.separator();
+        frame::frame("Subtitles", ui, |ui| {
+            if !self.subtitle_path.is_empty() {
+                let items = match srtparse::from_file(&self.subtitle_path) {
+                    Ok(subtitles) => subtitles,
+                    Err(error) => {
+                        let frame = egui::Frame::window(&ui.style())
+                            .shadow(egui::Shadow::NONE)
+                            .fill(egui::Color32::LIGHT_RED)
+                            .stroke(egui::Stroke::new(2.0, egui::Color32::RED));
+                        frame.show(ui, |ui| {
+                            ui.label(format!(
+                                "Unable to parse {} due to error: {}",
+                                &self.subtitle_path, error
+                            ));
+                        });
+                        Vec::new()
+                    }
+                };
+                self.clips = convert_subs_to_clips(&items);
+            }
 
-        let generate_button = egui::Button::new("Generate Clips");
-        if ui
-            .add_enabled(
-                !self.video_path.is_empty() && !self.clips.is_empty(),
-                generate_button,
-            )
-            .clicked()
-        {
-            self.generate_clips();
-        }
+            let generate_button = egui::Button::new("Generate Clips");
+            if ui
+                .add_enabled(
+                    !self.video_path.is_empty() && !self.clips.is_empty(),
+                    generate_button,
+                )
+                .clicked()
+            {
+                self.generate_clips();
+            }
+        });
     }
 }
 
