@@ -18,6 +18,16 @@ pub struct FFmpeg {
     flags: String,
 }
 
+impl FFmpeg {
+    /// Creates an FFmpeg CLI command for its given configuration.
+    pub fn command(self) -> String {
+        format!(
+            "ffmpeg -i {} {} {}",
+            self.input_path, self.flags, self.output_path
+        )
+    }
+}
+
 /// FFmpegBuilder builds an FFmpeg struct.
 pub struct FFmpegBuilder {
     // Required arguments
@@ -175,6 +185,7 @@ pub fn build_ffmpeg_args_for_clip(
 
 #[cfg(test)]
 mod tests {
+    use super::FFmpeg;
     use super::FFmpegBuilder;
 
     const INPUT: &str = "/directory/input.mp4";
@@ -256,5 +267,16 @@ mod tests {
             ffmpeg.flags,
             "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8 -vn -c:a libmp3lame -b:a 192k"
         );
+    }
+
+    #[test]
+    fn test_ffmpeg_command() {
+        let ffmpeg = FFmpeg {
+            input_path: "/input/path".to_string(),
+            output_path: "/output/path".to_string(),
+            flags: "-a -b -c".to_string(),
+        };
+        let want = "ffmpeg -i /input/path -a -b -c /output/path".to_string();
+        assert_eq!(ffmpeg.command(), want);
     }
 }
