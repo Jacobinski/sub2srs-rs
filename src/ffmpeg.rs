@@ -30,6 +30,7 @@ pub struct FFmpegBuilder {
     disable_audio: bool,
     end_time: Option<f64>,
     disable_video: bool,
+    encode_mp3_audio: bool,
 }
 
 impl FFmpegBuilder {
@@ -43,6 +44,7 @@ impl FFmpegBuilder {
             disable_audio: false,
             end_time: None,
             disable_video: false,
+            encode_mp3_audio: false,
         }
     }
 
@@ -88,6 +90,13 @@ impl FFmpegBuilder {
         self
     }
 
+    // Encodes the output audio as MP3. Equivalent to the FFmpeg `-c:a libmp3lame -b:a 192k` flag.
+    pub fn encode_mp3_audio(mut self) -> Self {
+        assert!(self.encode_mp3_audio == false);
+        self.encode_mp3_audio = true;
+        self
+    }
+
     pub fn build(self) -> FFmpeg {
         assert!(!self.input_path.is_empty());
         assert!(!self.output_path.is_empty());
@@ -115,6 +124,9 @@ impl FFmpegBuilder {
         }
         if self.disable_video {
             flags.push("-vn".to_string());
+        }
+        if self.encode_mp3_audio {
+            flags.push("-c:a libmp3lame -b:a 192k".to_string());
         }
 
         FFmpeg {
@@ -216,6 +228,12 @@ mod tests {
     }
 
     #[test]
+    fn test_ffmpeg_builder_encode_mp3_audio() {
+        let builder = FFmpegBuilder::new(INPUT.into(), OUTPUT.into()).encode_mp3_audio();
+        assert_eq!(builder.encode_mp3_audio, true);
+    }
+
+    #[test]
     fn test_ffmpeg_builder_build() {
         let seek_time = 123.4;
         let end_time = 567.8;
@@ -228,14 +246,15 @@ mod tests {
             .output_frames_count(frame_count)
             .scale(height)
             .disable_audio()
-            .disable_video();
+            .disable_video()
+            .encode_mp3_audio();
         let ffmpeg = builder.build();
 
         assert_eq!(ffmpeg.input_path, INPUT.to_string());
         assert_eq!(ffmpeg.output_path, OUTPUT.to_string());
         assert_eq!(
             ffmpeg.flags,
-            "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8 -vn"
+            "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8 -vn -c:a libmp3lame -b:a 192k"
         );
     }
 }
