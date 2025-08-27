@@ -19,12 +19,9 @@ pub struct FFmpeg {
 }
 
 impl FFmpeg {
-    /// Creates an FFmpeg CLI command for its given configuration.
-    pub fn command(self) -> String {
-        format!(
-            "ffmpeg -i {} {} {}",
-            self.input_path, self.flags, self.output_path
-        )
+    /// Create the arguments for an ffmpeg CLI command.
+    pub fn args(self) -> String {
+        format!("-i {} {} {}", self.input_path, self.flags, self.output_path)
     }
 }
 
@@ -270,13 +267,13 @@ mod tests {
     }
 
     #[test]
-    fn test_ffmpeg_command() {
+    fn test_ffmpeg_args() {
         let ffmpeg = FFmpeg {
             input_path: "/input/path".to_string(),
             output_path: "/output/path".to_string(),
             flags: "-a -b -c".to_string(),
         };
-        let want = "ffmpeg -i /input/path -a -b -c /output/path";
-        assert_eq!(ffmpeg.command(), want);
+        let want = "-i /input/path -a -b -c /output/path";
+        assert_eq!(ffmpeg.args(), want);
     }
 }
