@@ -5,9 +5,7 @@ pub fn frame<R>(
     ui: &mut egui::Ui,
     add_contents: impl FnOnce(&mut egui::Ui) -> R,
 ) -> egui::InnerResponse<R> {
-    let frame = egui::Frame::group(ui.style())
-        .inner_margin(egui::Margin { left: 6, right: 6, top: 6, bottom: 6 })
-        .corner_radius(5.0);
+    let frame = egui::Frame::new().inner_margin(egui::Margin::same(6));
 
     frame.show(ui, |ui| {
         ui.label(title);
