@@ -276,7 +276,7 @@ mod tests {
             output_path: "/output/path".to_string(),
             flags: "-a -b -c".to_string(),
         };
-        let want = "ffmpeg -i /input/path -a -b -c /output/path".to_string();
+        let want = "ffmpeg -i /input/path -a -b -c /output/path";
         assert_eq!(ffmpeg.command(), want);
     }
 }
