@@ -15,13 +15,16 @@ pub const BITRATE_192K: &str = "192k";
 pub struct FFmpeg {
     input_path: String,
     output_path: String,
-    flags: String,
+    flags: Vec<String>,
 }
 
 impl FFmpeg {
     /// Create the arguments for an ffmpeg CLI command.
-    pub fn args(self) -> String {
-        format!("-i {} {} {}", self.input_path, self.flags, self.output_path)
+    pub fn args(self) -> Vec<String> {
+        let mut args = vec!["-i".to_string(), self.input_path];
+        args.extend(self.flags);
+        args.push(self.output_path);
+        args
     }
 }
 
@@ -121,7 +124,7 @@ impl FFmpegBuilder {
             flags.extend(["-vframes".to_string(), vframes.to_string()]);
         }
         if let Some(scale_height) = self.scale_height {
-            flags.extend(["-vf".to_string(), format!("scale:-1:{}", scale_height)]);
+            flags.extend(["-vf".to_string(), format!("scale=-1:{}", scale_height)]);
         }
         if self.disable_audio {
             flags.push("-an".to_string());
@@ -133,13 +136,18 @@ impl FFmpegBuilder {
             flags.push("-vn".to_string());
         }
         if self.encode_mp3_audio {
-            flags.push("-c:a libmp3lame -b:a 192k".to_string());
+            flags.extend([
+                "-c:a".to_string(),
+                "libmp3lame".to_string(),
+                "-b:a".to_string(),
+                "192k".to_string(),
+            ]);
         }
 
         FFmpeg {
             input_path: self.input_path,
             output_path: self.output_path,
-            flags: flags.join(" "),
+            flags: flags,
         }
     }
 }
@@ -262,7 +270,22 @@ mod tests {
         assert_eq!(ffmpeg.output_path, OUTPUT.to_string());
         assert_eq!(
             ffmpeg.flags,
-            "-ss 123.4 -vframes 2 -vf scale:-1:320 -an -to 567.8 -vn -c:a libmp3lame -b:a 192k"
+            [
+                "-ss",
+                "123.4",
+                "-vframes",
+                "2",
+                "-vf",
+                "scale=-1:320",
+                "-an",
+                "-to",
+                "567.8",
+                "-vn",
+                "-c:a",
+                "libmp3lame",
+                "-b:a",
+                "192k"
+            ]
         );
     }
 
@@ -271,9 +294,11 @@ mod tests {
         let ffmpeg = FFmpeg {
             input_path: "/input/path".to_string(),
             output_path: "/output/path".to_string(),
-            flags: "-a -b -c".to_string(),
+            flags: vec!["-a".into(), "-b".into(), "-c".into()],
         };
-        let want = "-i /input/path -a -b -c /output/path";
-        assert_eq!(ffmpeg.args(), want);
+        assert_eq!(
+            ffmpeg.args(),
+            ["-i", "/input/path", "-a", "-b", "-c", "/output/path"]
+        );
     }
 }
