@@ -6,7 +6,7 @@ pub fn take_screenshot(time: f64, input: String, output: String) {
         Command::new("ffmpeg")
             .args(["-version"])
             .status()
-            .expect("failed to execute ffmpeg --version")
+            .expect("failed to execute ffmpeg -version")
             .success()
     );
 
