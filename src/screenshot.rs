@@ -1,4 +1,4 @@
-use crate::ffmpeg::{FFmpeg, FFmpegBuilder};
+use crate::ffmpeg::FFmpegBuilder;
 use std::process::Command;
 
 pub fn take_screenshot(time: f64, input: String, output: String) {
