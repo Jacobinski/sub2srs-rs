@@ -5,6 +5,8 @@ pub fn record_audio_clip(start_time: f64, end_time: f64, input: String, output: 
     assert!(
         Command::new("ffmpeg")
             .args(["-version"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .status()
             .expect("failed to execute ffmpeg -version")
             .success()
@@ -19,6 +21,8 @@ pub fn record_audio_clip(start_time: f64, end_time: f64, input: String, output: 
 
     Command::new("ffmpeg")
         .args(ffmpeg.args())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .status()
         .expect("audio clip command should succeed");
 }

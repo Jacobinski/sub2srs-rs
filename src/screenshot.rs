@@ -5,6 +5,8 @@ pub fn take_screenshot(time: f64, input: String, output: String) {
     assert!(
         Command::new("ffmpeg")
             .args(["-version"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .status()
             .expect("failed to execute ffmpeg -version")
             .success()
@@ -19,6 +21,8 @@ pub fn take_screenshot(time: f64, input: String, output: String) {
 
     Command::new("ffmpeg")
         .args(ffmpeg.args())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .status()
         .expect("screenshot command should succeed");
 }
