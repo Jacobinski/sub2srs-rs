@@ -6,7 +6,6 @@ pub mod screenshot;
 use eframe::egui;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
 pub fn run() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -46,38 +45,39 @@ fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
         .collect()
 }
 
+fn process_clip(input_path: &String, output_dir: &String, clip: &SubtitleClip) {
+    let start_time = clip.start_time.as_secs_f64();
+    let end_time = clip.end_time.as_secs_f64();
+    let mid_time = (clip.start_time + (clip.end_time - clip.start_time) / 2).as_secs_f64();
+    let screenshot_path = Path::new(output_dir).join(format!("screenshot_{}.png", clip.index));
+    let audio_path = Path::new(output_dir).join(format!("audio_clip_{}.mp3", clip.index));
+
+    // XXX: We should check the results of these two calls.
+    // TODO: Change these modules to use a PathBuf so we don't need to
+    //       use this to_str().unwrap().to_string() garbage.
+    screenshot::take_screenshot(
+        mid_time,
+        input_path.clone(),
+        screenshot_path.to_str().unwrap().to_string(),
+    );
+    audio::record_audio_clip(
+        start_time,
+        end_time,
+        input_path.clone(),
+        audio_path.to_str().unwrap().to_string(),
+    );
+}
+
 impl MyApp {
     fn generate_clips(&self) {
-        let output_dir = "/tmp/sub2srs_test"; // This should probably be a constant or configurable
+        let output_dir = "/tmp/sub2srs_test";
         if !Path::new(output_dir).exists() {
             fs::create_dir_all(output_dir).expect("Failed to create output directory");
         }
 
         for clip in &self.clips {
-            let args = ffmpeg::build_ffmpeg_args_for_clip(
-                clip.index,
-                clip.start_time.as_secs_f64(),
-                clip.end_time.as_secs_f64(),
-                &self.video_path,
-                output_dir,
-            );
-            println!("Executing ffmpeg for clip {}: {:?}", clip.index, args);
-
-            let status = Command::new("ffmpeg")
-                .args(args)
-                .status()
-                .expect("Failed to execute ffmpeg");
-
-            if !status.success() {
-                println!(
-                    "ffmpeg command for clip {} failed with status: {}",
-                    clip.index, status
-                );
-            } else {
-                println!("Successfully processed clip {}", clip.index);
-            }
+            process_clip(&self.video_path, &output_dir.to_string(), &clip);
         }
-        println!("All clips processed.");
     }
 
     fn render_app(&mut self, ctx: &egui::Context) {
@@ -218,54 +218,6 @@ mod tests {
     }
 
     #[test]
-    fn test_ffmpeg_command_generation() {
-        let clip = SubtitleClip {
-            index: 1,
-            start_time: Duration::from_secs(10),
-            end_time: Duration::from_secs(15),
-        };
-        // Use a fixed path for command generation testing for consistent asserts
-        let output_dir = "/tmp/sub2srs_test";
-        let video_path = get_absolute_path(TEST_VIDEO);
-
-        let args = ffmpeg::build_ffmpeg_args_for_clip(
-            clip.index,
-            clip.start_time.as_secs_f64(),
-            clip.end_time.as_secs_f64(),
-            &video_path,
-            output_dir,
-        );
-
-        let expected_args: Vec<String> = [
-            ffmpeg::INPUT,
-            &video_path,
-            ffmpeg::SEEK,
-            "10",
-            ffmpeg::VFRAMES,
-            "1",
-            ffmpeg::VF,
-            ffmpeg::SCALE,
-            ffmpeg::AN,
-            "/tmp/sub2srs_test/screenshot_1.png",
-            ffmpeg::SEEK,
-            "10",
-            ffmpeg::TO,
-            "15",
-            ffmpeg::VN,
-            ffmpeg::CODEC_AUDIO,
-            ffmpeg::LIBMP3LAME,
-            ffmpeg::BITRATE_AUDIO,
-            ffmpeg::BITRATE_192K,
-            "/tmp/sub2srs_test/audio_clip_1.mp3",
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
-
-        assert_eq!(args, expected_args);
-    }
-
-    #[test]
     fn test_ffmpeg_execution() {
         let output_dir = setup_test_dir();
         let output_dir_str = output_dir.to_str().unwrap();
@@ -278,26 +230,7 @@ mod tests {
 
         // Test only the first 3 clips to save time
         for clip in clips.iter().take(3) {
-            let args = ffmpeg::build_ffmpeg_args_for_clip(
-                clip.index,
-                clip.start_time.as_secs_f64(),
-                clip.end_time.as_secs_f64(),
-                &video_path,
-                output_dir_str,
-            );
-
-            let status = Command::new("ffmpeg")
-                .args(args)
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .status()
-                .expect("Failed to execute ffmpeg");
-
-            assert!(
-                status.success(),
-                "ffmpeg command for clip {} should succeed",
-                clip.index
-            );
+            process_clip(&video_path, &output_dir_str.to_string(), clip);
         }
 
         let output_files = fs::read_dir(output_dir).unwrap().count();
