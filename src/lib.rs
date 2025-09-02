@@ -6,6 +6,7 @@ pub mod screenshot;
 use eframe::egui;
 use std::fs;
 use std::path::Path;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub fn run() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -28,11 +29,25 @@ struct SubtitleClip {
     end_time: std::time::Duration,
 }
 
-#[derive(Default)]
 struct MyApp {
+    tx: Sender<u32>,
+    rx: Receiver<u32>,
     video_path: String,
     subtitle_path: String,
     clips: Vec<SubtitleClip>,
+}
+
+impl Default for MyApp {
+    fn default() -> Self {
+        let (tx, rx) = std::sync::mpsc::channel();
+        Self {
+            tx,
+            rx,
+            video_path: String::new(),
+            subtitle_path: String::new(),
+            clips: Vec::new(),
+        }
+    }
 }
 
 fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
