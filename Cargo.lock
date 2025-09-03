@@ -2750,7 +2750,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sub2srs-rs"
+name = "subs2srs-rs"
 version = "0.1.0"
 dependencies = [
  "eframe",

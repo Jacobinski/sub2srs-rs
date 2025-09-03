@@ -38,7 +38,7 @@ mod tests {
     use uuid::Uuid;
 
     const TEST_VIDEO: &str = "videos/Minecraft_1.20生存#1.偏頭.mkv";
-    const TEST_OUTPUT_DIR_BASE: &str = "/tmp/sub2srs_tests";
+    const TEST_OUTPUT_DIR_BASE: &str = "/tmp/subs2srs_tests";
 
     // Helper to get absolute path from relative
     fn get_absolute_path(relative_path: &str) -> String {

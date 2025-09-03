@@ -16,7 +16,7 @@ pub fn run() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "sub2srs",
+        "subs2srs",
         options,
         Box::new(|_cc| Ok(Box::<MyApp>::default())),
     )
@@ -92,7 +92,7 @@ fn process_clip(input_path: String, output_dir: String, clip: SubtitleClip) {
 
 impl MyApp {
     fn generate_clips(&self) {
-        let output_dir = "/tmp/sub2srs_test";
+        let output_dir = "/tmp/subs2srs_test";
         if !Path::new(output_dir).exists() {
             fs::create_dir_all(output_dir).expect("Failed to create output directory");
         }
@@ -201,7 +201,7 @@ mod tests {
 
     const TEST_VIDEO: &str = "videos/Minecraft_1.20生存#1.偏頭.mkv";
     const TEST_SRT: &str = "videos/Minecraft_1.20生存#1.偏頭.zh.srt";
-    const TEST_OUTPUT_DIR_BASE: &str = "/tmp/sub2srs_tests";
+    const TEST_OUTPUT_DIR_BASE: &str = "/tmp/subs2srs_tests";
 
     // Helper to get absolute path from relative
     fn get_absolute_path(relative_path: &str) -> String {
