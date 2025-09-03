@@ -60,12 +60,12 @@ fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
         .collect()
 }
 
-fn process_clip(input_path: &String, output_dir: &String, clip: &SubtitleClip) {
+fn process_clip(input_path: String, output_dir: String, clip: SubtitleClip) {
     let start_time = clip.start_time.as_secs_f64();
     let end_time = clip.end_time.as_secs_f64();
     let mid_time = (clip.start_time + (clip.end_time - clip.start_time) / 2).as_secs_f64();
-    let screenshot_path = Path::new(output_dir).join(format!("screenshot_{}.png", clip.index));
-    let audio_path = Path::new(output_dir).join(format!("audio_clip_{}.mp3", clip.index));
+    let screenshot_path = Path::new(&output_dir).join(format!("screenshot_{}.png", clip.index));
+    let audio_path = Path::new(&output_dir).join(format!("audio_clip_{}.mp3", clip.index));
 
     // XXX: We should check the results of these two calls.
     // TODO: Change these modules to use a PathBuf so we don't need to
@@ -75,12 +75,19 @@ fn process_clip(input_path: &String, output_dir: &String, clip: &SubtitleClip) {
         input_path.clone(),
         screenshot_path.to_str().unwrap().to_string(),
     );
-    audio::record_audio_clip(
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("failed to create new tokio runtime");
+
+    rt.block_on(audio::record_audio_clip(
         start_time,
         end_time,
         input_path.clone(),
         audio_path.to_str().unwrap().to_string(),
-    );
+    ))
+    .expect("failed to create audio clip");
 }
 
 impl MyApp {
@@ -91,7 +98,11 @@ impl MyApp {
         }
 
         for clip in &self.clips {
-            process_clip(&self.video_path, &output_dir.to_string(), &clip);
+            process_clip(
+                self.video_path.clone(),
+                output_dir.to_string(),
+                clip.clone(),
+            );
         }
     }
 
@@ -245,7 +256,7 @@ mod tests {
 
         // Test only the first 3 clips to save time
         for clip in clips.iter().take(3) {
-            process_clip(&video_path, &output_dir_str.to_string(), clip);
+            process_clip(video_path.clone(), output_dir_str.to_string(), clip.clone());
         }
 
         let output_files = fs::read_dir(output_dir).unwrap().count();

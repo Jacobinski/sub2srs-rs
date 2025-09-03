@@ -2,15 +2,9 @@ use crate::ffmpeg::FFmpegBuilder;
 use std::process::Command;
 
 pub fn take_screenshot(time: f64, input: String, output: String) {
-    assert!(
-        Command::new("ffmpeg")
-            .args(["-version"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-            .expect("failed to execute ffmpeg -version")
-            .success()
-    );
+    assert!(time >= 0.0);
+    assert_ne!(input, "");
+    assert_ne!(output, "");
 
     let ffmpeg = FFmpegBuilder::new(input, output)
         .seek_to(time)

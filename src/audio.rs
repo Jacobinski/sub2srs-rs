@@ -1,16 +1,17 @@
 use crate::ffmpeg::FFmpegBuilder;
-use std::process::Command;
+use std::process::{ExitStatus, Output};
+use tokio::process::Command;
 
-pub fn record_audio_clip(start_time: f64, end_time: f64, input: String, output: String) {
-    assert!(
-        Command::new("ffmpeg")
-            .args(["-version"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-            .expect("failed to execute ffmpeg -version")
-            .success()
-    );
+pub async fn record_audio_clip(
+    start_time: f64,
+    end_time: f64,
+    input: String,
+    output: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    assert!(start_time >= 0.0);
+    assert!(end_time > start_time);
+    assert_ne!(input, "");
+    assert_ne!(output, "");
 
     let ffmpeg = FFmpegBuilder::new(input, output)
         .seek_to(start_time)
@@ -23,8 +24,10 @@ pub fn record_audio_clip(start_time: f64, end_time: f64, input: String, output: 
         .args(ffmpeg.args())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .status()
-        .expect("audio clip command should succeed");
+        .output()
+        .await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -57,8 +60,8 @@ mod tests {
         output_dir
     }
 
-    #[test]
-    fn test_record_audio() {
+    #[tokio::test]
+    async fn test_record_audio() {
         let start_time = 10.10;
         let end_time = 12.12;
         let input = get_absolute_path(TEST_VIDEO);
@@ -66,7 +69,9 @@ mod tests {
         let output_path = PathBuf::from(&output);
 
         assert!(!output_path.exists());
-        record_audio_clip(start_time, end_time, input, output);
+        record_audio_clip(start_time, end_time, input, output)
+            .await
+            .expect("failed to record audio clip");
         assert!(output_path.exists());
     }
 }
