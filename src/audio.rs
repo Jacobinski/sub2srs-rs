@@ -38,7 +38,6 @@ mod tests {
     use super::*;
     use std::fs;
     use std::path::PathBuf;
-    use std::time::Duration;
     use uuid::Uuid;
 
     const TEST_VIDEO: &str = "videos/Minecraft_1.20生存#1.偏頭.mkv";
@@ -78,7 +77,11 @@ mod tests {
             .await
             .expect("failed to record audio clip");
         assert!(output_path.exists());
-        rx.recv_timeout(Duration::from_secs(2))
-            .expect("record_audio_clip failed to send progress data");
+
+        let ffmpeg_command_executions: u32 = rx.iter().sum();
+        assert_eq!(
+            ffmpeg_command_executions, 1,
+            "one clip should have been converted with ffmpeg"
+        );
     }
 }
