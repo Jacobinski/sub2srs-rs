@@ -1,7 +1,11 @@
 use crate::ffmpeg::FFmpegBuilder;
-use std::process::Command;
+use tokio::process::Command;
 
-pub fn take_screenshot(time: f64, input: String, output: String) {
+pub async fn take_screenshot(
+    time: f64,
+    input: String,
+    output: String,
+) -> Result<(), Box<dyn std::error::Error>> {
     assert!(time >= 0.0);
     assert_ne!(input, "");
     assert_ne!(output, "");
@@ -17,8 +21,10 @@ pub fn take_screenshot(time: f64, input: String, output: String) {
         .args(ffmpeg.args())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .status()
-        .expect("screenshot command should succeed");
+        .output()
+        .await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -51,15 +57,17 @@ mod tests {
         output_dir
     }
 
-    #[test]
-    fn test_take_screenshot() {
+    #[tokio::test]
+    async fn test_take_screenshot() {
         let time = 10.23;
         let input = get_absolute_path(TEST_VIDEO);
         let output = format!("{}/screenshot.png", setup_test_dir().to_str().unwrap());
         let output_path = PathBuf::from(&output);
 
         assert!(!output_path.exists());
-        take_screenshot(time, input, output);
+        take_screenshot(time, input, output)
+            .await
+            .expect("failed to take screenshot");
         assert!(output_path.exists());
     }
 }

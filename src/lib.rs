@@ -67,20 +67,20 @@ fn process_clip(input_path: String, output_dir: String, clip: SubtitleClip) {
     let screenshot_path = Path::new(&output_dir).join(format!("screenshot_{}.png", clip.index));
     let audio_path = Path::new(&output_dir).join(format!("audio_clip_{}.mp3", clip.index));
 
-    // XXX: We should check the results of these two calls.
-    // TODO: Change these modules to use a PathBuf so we don't need to
-    //       use this to_str().unwrap().to_string() garbage.
-    screenshot::take_screenshot(
-        mid_time,
-        input_path.clone(),
-        screenshot_path.to_str().unwrap().to_string(),
-    );
-
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("failed to create new tokio runtime");
 
+    // XXX: We should check the results of these two calls.
+    // TODO: Change these modules to use a PathBuf so we don't need to
+    //       use this to_str().unwrap().to_string() garbage.
+    rt.block_on(screenshot::take_screenshot(
+        mid_time,
+        input_path.clone(),
+        screenshot_path.to_str().unwrap().to_string(),
+    ))
+    .expect("failed to create screenshot");
     rt.block_on(audio::record_audio_clip(
         start_time,
         end_time,
