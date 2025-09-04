@@ -60,7 +60,7 @@ fn convert_subs_to_clips(subs: &[srtparse::Item]) -> Vec<SubtitleClip> {
         .collect()
 }
 
-fn process_clip(input_path: String, output_dir: String, clip: SubtitleClip) {
+fn process_clip(input_path: String, output_dir: String, clip: SubtitleClip, progress: Sender<u32>) {
     let start_time = clip.start_time.as_secs_f64();
     let end_time = clip.end_time.as_secs_f64();
     let mid_time = (clip.start_time + (clip.end_time - clip.start_time) / 2).as_secs_f64();
@@ -86,6 +86,7 @@ fn process_clip(input_path: String, output_dir: String, clip: SubtitleClip) {
         end_time,
         input_path.clone(),
         audio_path.to_str().unwrap().to_string(),
+        progress.clone(),
     ))
     .expect("failed to create audio clip");
 }
@@ -102,6 +103,7 @@ impl MyApp {
                 self.video_path.clone(),
                 output_dir.to_string(),
                 clip.clone(),
+                self.tx.clone(),
             );
         }
     }
@@ -166,6 +168,7 @@ impl MyApp {
                 )
                 .clicked()
             {
+                // TODO: Generate a new Sender and Receiver channel here?
                 self.generate_clips();
             }
         });
@@ -249,6 +252,7 @@ mod tests {
         let output_dir_str = output_dir.to_str().unwrap();
         let srt_path = get_absolute_path(TEST_SRT);
         let video_path = get_absolute_path(TEST_VIDEO);
+        let (tx, rx) = std::sync::mpsc::channel();
 
         let items = srtparse::from_file(&srt_path).expect("Failed to parse SRT file");
         let clips = convert_subs_to_clips(&items);
@@ -256,11 +260,23 @@ mod tests {
 
         // Test only the first 3 clips to save time
         for clip in clips.iter().take(3) {
-            process_clip(video_path.clone(), output_dir_str.to_string(), clip.clone());
+            process_clip(
+                video_path.clone(),
+                output_dir_str.to_string(),
+                clip.clone(),
+                tx.clone(),
+            );
         }
+        drop(tx);
 
         let output_files = fs::read_dir(output_dir).unwrap().count();
         assert_eq!(output_files, 3 * 2, "Should be two files per clip tested");
+
+        let ffmpeg_command_executions: u32 = rx.iter().sum();
+        assert_eq!(
+            ffmpeg_command_executions, 3,
+            "three clips should have been converted with ffmpeg"
+        );
     }
 
     #[test]

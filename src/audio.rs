@@ -1,4 +1,5 @@
 use crate::ffmpeg::FFmpegBuilder;
+use std::sync::mpsc::Sender;
 use tokio::process::Command;
 
 pub async fn record_audio_clip(
@@ -6,6 +7,7 @@ pub async fn record_audio_clip(
     end_time: f64,
     input: String,
     output: String,
+    progress: Sender<u32>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     assert!(start_time >= 0.0);
     assert!(end_time > start_time);
@@ -26,6 +28,8 @@ pub async fn record_audio_clip(
         .output()
         .await?;
 
+    progress.send(1).expect("failed to send progress");
+
     Ok(())
 }
 
@@ -34,6 +38,7 @@ mod tests {
     use super::*;
     use std::fs;
     use std::path::PathBuf;
+    use std::time::Duration;
     use uuid::Uuid;
 
     const TEST_VIDEO: &str = "videos/Minecraft_1.20生存#1.偏頭.mkv";
@@ -66,11 +71,14 @@ mod tests {
         let input = get_absolute_path(TEST_VIDEO);
         let output = format!("{}/audio_clip.mp3", setup_test_dir().to_str().unwrap());
         let output_path = PathBuf::from(&output);
+        let (tx, rx) = std::sync::mpsc::channel();
 
         assert!(!output_path.exists());
-        record_audio_clip(start_time, end_time, input, output)
+        record_audio_clip(start_time, end_time, input, output, tx)
             .await
             .expect("failed to record audio clip");
         assert!(output_path.exists());
+        rx.recv_timeout(Duration::from_secs(2))
+            .expect("record_audio_clip failed to send progress data");
     }
 }
